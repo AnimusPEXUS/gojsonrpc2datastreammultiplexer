@@ -1,16 +1,16 @@
 package gojsonrpc2
 
-// JSONRPC2Multiplexer is a protocol for quantisizing (and channelizing)
+// JSONRPC2DataStreamMultiplexer is a protocol for quantisizing (and channelizing)
 // data being sent through single data stream.
 //
 // ChannelData() can be called asyncronously with data which need to be channeled.
 //
-// JSONRPC2Multiplexer tells the other side about new buffer on this side's JSONRPC2Multiplexer.
-// the other side's JSONRPC2Multiplexer then sequentially asks for bits of buffer, until other
-// side gets the whole buffer. after other side's JSONRPC2Multiplexer get's complete buffer,
+// JSONRPC2DataStreamMultiplexer tells the other side about new buffer on this side's JSONRPC2DataStreamMultiplexer.
+// the other side's JSONRPC2DataStreamMultiplexer then sequentially asks for bits of buffer, until other
+// side gets the whole buffer. after other side's JSONRPC2DataStreamMultiplexer get's complete buffer,
 // it may pass (using it's OnDataCB callback) it for farther consumption.
 //
-// JSONRPC2Multiplexer calls PushMessageToOutsideCB when it's need to send data to other side
+// JSONRPC2DataStreamMultiplexer calls PushMessageToOutsideCB when it's need to send data to other side
 
 import (
 	"bytes"
@@ -26,6 +26,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/AnimusPEXUS/goinmemfile"
+	"github.com/AnimusPEXUS/gojsonrpc2"
 	"github.com/AnimusPEXUS/golockerreentrancycontext"
 )
 
@@ -35,7 +36,7 @@ const (
 	JSONRPC2_MULTIPLEXER_METHOD_GET_BUFFER_SLICE     = "gbs"
 )
 
-type JSONRPC2Multiplexer struct {
+type JSONRPC2DataStreamMultiplexer struct {
 	PushMessageToOutsideCB func(data []byte) error
 
 	// you must allocate buffer of size 'size' and pass it as WriteSeeker
@@ -48,22 +49,22 @@ type JSONRPC2Multiplexer struct {
 	// OnRequestToProvideWriteSeekerCB is complete
 	OnIncommingDataTransferComplete func(io.WriteSeeker)
 
-	buffer_wrappers        []*JSONRPC2MultiplexerBufferWrapper
+	buffer_wrappers        []*JSONRPC2DataStreamMultiplexerBufferWrapper
 	buffer_wrappers_mutex2 *sync.Mutex
 
-	jrpc_node *JSONRPC2Node
+	jrpc_node *gojsonrpc2.JSONRPC2Node
 
 	debugName string
 }
 
-func NewJSONRPC2Multiplexer() *JSONRPC2Multiplexer {
-	self := new(JSONRPC2Multiplexer)
-	self.debugName = "JSONRPC2Multiplexer"
+func NewJSONRPC2DataStreamMultiplexer() *JSONRPC2DataStreamMultiplexer {
+	self := new(JSONRPC2DataStreamMultiplexer)
+	self.debugName = "JSONRPC2DataStreamMultiplexer"
 
 	self.buffer_wrappers_mutex2 = new(sync.Mutex)
 
-	self.jrpc_node = NewJSONRPC2Node()
-	self.jrpc_node.OnRequestCB = func(m *Message) (error, error) {
+	self.jrpc_node = gojsonrpc2.NewJSONRPC2Node()
+	self.jrpc_node.OnRequestCB = func(m *gojsonrpc2.Message) (error, error) {
 		if debug {
 			self.DebugPrintln("got request from jsonrpc node")
 			self.DebugPrintln("passing to self.handle_jrpcOnRequestCB")
@@ -79,26 +80,26 @@ func NewJSONRPC2Multiplexer() *JSONRPC2Multiplexer {
 	return self
 }
 
-func (self *JSONRPC2Multiplexer) SetDebugName(name string) {
+func (self *JSONRPC2DataStreamMultiplexer) SetDebugName(name string) {
 	self.debugName = fmt.Sprintf("[%s]", name)
-	self.jrpc_node.SetDebugName(fmt.Sprintf("%s [JSONRPC2Node]", self.debugName))
+	self.jrpc_node.SetDebugName(fmt.Sprintf("%s [JSONRPC2Multiplexer]", self.debugName))
 }
 
-func (self *JSONRPC2Multiplexer) DebugPrintln(data ...any) {
+func (self *JSONRPC2DataStreamMultiplexer) DebugPrintln(data ...any) {
 	fmt.Println(append(append([]any{}, self.debugName), data...)...)
 }
 
-func (self *JSONRPC2Multiplexer) DebugPrintfln(format string, data ...any) {
+func (self *JSONRPC2DataStreamMultiplexer) DebugPrintfln(format string, data ...any) {
 	fmt.Println(append(append([]any{}, self.debugName), fmt.Sprintf(format, data...))...)
 }
 
-func (self *JSONRPC2Multiplexer) Close() {
+func (self *JSONRPC2DataStreamMultiplexer) Close() {
 	self.jrpc_node.Close()
 	self.jrpc_node = nil
 	self.buffer_wrappers = nil
 }
 
-func (self *JSONRPC2Multiplexer) DefaultOnRequestToProvideWriteSeekerCB(
+func (self *JSONRPC2DataStreamMultiplexer) DefaultOnRequestToProvideWriteSeekerCB(
 	size int64,
 	provide_data_destination func(io.WriteSeeker) error,
 ) error {
@@ -113,13 +114,13 @@ func (self *JSONRPC2Multiplexer) DefaultOnRequestToProvideWriteSeekerCB(
 	return nil
 }
 
-func (self *JSONRPC2Multiplexer) requestSendingRespWaitingRoutine(
-	msg *Message,
-	request_id_hook *JSONRPC2NodeNewRequestIdHook,
+func (self *JSONRPC2DataStreamMultiplexer) requestSendingRespWaitingRoutine(
+	msg *gojsonrpc2.Message,
+	request_id_hook *gojsonrpc2.JSONRPC2NodeNewRequestIdHook,
 ) (
 	timeout bool,
 	closed bool,
-	resp *Message,
+	resp *gojsonrpc2.Message,
 	proto_err error,
 	err error,
 ) {
@@ -146,7 +147,7 @@ retry_label:
 	var (
 		chan_timeout  = make(chan struct{})
 		chan_close    = make(chan struct{})
-		chan_response = make(chan *Message)
+		chan_response = make(chan *gojsonrpc2.Message)
 	)
 
 	if debug {
@@ -160,14 +161,14 @@ retry_label:
 		msg,
 		true,
 		false,
-		&JSONRPC2NodeRespHandler{
+		&gojsonrpc2.JSONRPC2NodeRespHandler{
 			OnTimeout: func() {
 				chan_timeout <- struct{}{}
 			},
 			OnClose: func() {
 				chan_close <- struct{}{}
 			},
-			OnResponse: func(resp2 *Message) {
+			OnResponse: func(resp2 *gojsonrpc2.Message) {
 				chan_response <- resp2
 			},
 		},
@@ -218,11 +219,11 @@ retry_label:
 }
 
 // no re-entrant locks in golang
-func (self *JSONRPC2Multiplexer) getBuffByIdLocal(
+func (self *JSONRPC2DataStreamMultiplexer) getBuffByIdLocal(
 	id string,
 	lrc *golockerreentrancycontext.LockerReentrancyContext,
 ) (
-	bw *JSONRPC2MultiplexerBufferWrapper,
+	bw *JSONRPC2DataStreamMultiplexerBufferWrapper,
 	ok bool,
 ) {
 	if lrc == nil {
@@ -252,8 +253,8 @@ func (self *JSONRPC2Multiplexer) getBuffByIdLocal(
 	return nil, false
 }
 
-func (self *JSONRPC2Multiplexer) jrpcOnRequestCB_NEW_BUFFER_AVAILABLE(
-	msg *Message,
+func (self *JSONRPC2DataStreamMultiplexer) jrpcOnRequestCB_NEW_BUFFER_AVAILABLE(
+	msg *gojsonrpc2.Message,
 ) (
 	timedout bool,
 	closed bool,
@@ -283,7 +284,7 @@ func (self *JSONRPC2Multiplexer) jrpcOnRequestCB_NEW_BUFFER_AVAILABLE(
 		self.DebugPrintfln("jrpcOnRequestCB_NEW_BUFFER_AVAILABLE(%s)", buffid_str)
 	}
 
-	var buffer_info_resp *JSONRPC2Multiplexer_proto_BufferInfo_Res
+	var buffer_info_resp *JSONRPC2DataStreamMultiplexer_proto_BufferInfo_Res
 
 	{
 		timedout, closed, buffer_info_resp, proto_err, err =
@@ -412,8 +413,8 @@ func (self *JSONRPC2Multiplexer) jrpcOnRequestCB_NEW_BUFFER_AVAILABLE(
 	return false, false, nil, nil
 }
 
-func (self *JSONRPC2Multiplexer) jrpcOnRequestCB_GET_BUFFER_INFO(
-	msg *Message,
+func (self *JSONRPC2DataStreamMultiplexer) jrpcOnRequestCB_GET_BUFFER_INFO(
+	msg *gojsonrpc2.Message,
 	lrc *golockerreentrancycontext.LockerReentrancyContext,
 ) (
 	timedout bool,
@@ -459,7 +460,7 @@ func (self *JSONRPC2Multiplexer) jrpcOnRequestCB_GET_BUFFER_INFO(
 			errors.New("invalid buffer id")
 	}
 
-	info := new(JSONRPC2Multiplexer_proto_BufferInfo_Res)
+	info := new(JSONRPC2DataStreamMultiplexer_proto_BufferInfo_Res)
 
 	{
 		buff_size, err := bw.BufferSize()
@@ -476,7 +477,7 @@ func (self *JSONRPC2Multiplexer) jrpcOnRequestCB_GET_BUFFER_INFO(
 		self.DebugPrintln("jrpcOnRequestCB_GET_BUFFER_INFO: composing response")
 	}
 
-	resp := new(Message)
+	resp := new(gojsonrpc2.Message)
 	{
 		x, ok := msg.GetId()
 		if !ok {
@@ -515,8 +516,8 @@ func (self *JSONRPC2Multiplexer) jrpcOnRequestCB_GET_BUFFER_INFO(
 	return false, false, nil, nil
 }
 
-func (self *JSONRPC2Multiplexer) jrpcOnRequestCB_GET_BUFFER_SLICE(
-	msg *Message,
+func (self *JSONRPC2DataStreamMultiplexer) jrpcOnRequestCB_GET_BUFFER_SLICE(
+	msg *gojsonrpc2.Message,
 	lrc *golockerreentrancycontext.LockerReentrancyContext,
 ) (
 	timedout bool,
@@ -655,7 +656,7 @@ func (self *JSONRPC2Multiplexer) jrpcOnRequestCB_GET_BUFFER_SLICE(
 		self.DebugPrintln("jrpcOnRequestCB_GET_BUFFER_SLICE: base64.RawStdEncoding.EncodeToString")
 	}
 
-	resp_msg := new(JSONRPC2Multiplexer_proto_BufferSlice_Res)
+	resp_msg := new(JSONRPC2DataStreamMultiplexer_proto_BufferSlice_Res)
 	resp_msg.Data = base64.RawStdEncoding.EncodeToString(buff_slice)
 
 	// TODO: next not checked. thinking and checking required
@@ -664,7 +665,7 @@ func (self *JSONRPC2Multiplexer) jrpcOnRequestCB_GET_BUFFER_SLICE(
 		self.DebugPrintln("jrpcOnRequestCB_GET_BUFFER_SLICE: composing response")
 	}
 
-	resp := new(Message)
+	resp := new(gojsonrpc2.Message)
 	{
 		x, ok := msg.GetId()
 		if !ok {
@@ -703,8 +704,8 @@ func (self *JSONRPC2Multiplexer) jrpcOnRequestCB_GET_BUFFER_SLICE(
 	return false, false, nil, nil
 }
 
-func (self *JSONRPC2Multiplexer) handle_jrpcOnRequestCB(
-	msg *Message,
+func (self *JSONRPC2DataStreamMultiplexer) handle_jrpcOnRequestCB(
+	msg *gojsonrpc2.Message,
 	lrc *golockerreentrancycontext.LockerReentrancyContext,
 ) (
 	timeout bool,
@@ -722,7 +723,7 @@ func (self *JSONRPC2Multiplexer) handle_jrpcOnRequestCB(
 
 	var dont_send_default bool = false
 
-	resp := new(Message)
+	resp := new(gojsonrpc2.Message)
 
 	defer func() {
 		// TODO: add error handling?
@@ -760,7 +761,7 @@ func (self *JSONRPC2Multiplexer) handle_jrpcOnRequestCB(
 		}
 	}()
 
-	resp.Error = &JSONRPC2Error{
+	resp.Error = &gojsonrpc2.JSONRPC2Error{
 		Code:    -32603,
 		Message: "Internal error",
 	}
@@ -881,14 +882,14 @@ func (self *JSONRPC2Multiplexer) handle_jrpcOnRequestCB(
 // results:
 // #0 bool - timedout
 // #1 bool - closed
-// #2 *JSONRPC2Multiplexer_proto_BufferInfo
+// #2 *JSONRPC2DataStreamMultiplexer_proto_BufferInfo
 // #2 invalid response (protocol) error - not nil in case if it's protocol error
 // #3 error
-func (self *JSONRPC2Multiplexer) getBuffInfo(
+func (self *JSONRPC2DataStreamMultiplexer) getBuffInfo(
 	buffid string,
 	timeout time.Duration,
-) (bool, bool, *JSONRPC2Multiplexer_proto_BufferInfo_Res, error, error) {
-	m := new(Message)
+) (bool, bool, *JSONRPC2DataStreamMultiplexer_proto_BufferInfo_Res, error, error) {
+	m := new(gojsonrpc2.Message)
 	m.Method = JSONRPC2_MULTIPLEXER_METHOD_GET_BUFFER_INFO
 	m.Params = map[string]string{"id": buffid}
 	timedout, closed, resp, proto_eror, err :=
@@ -959,7 +960,7 @@ func (self *JSONRPC2Multiplexer) getBuffInfo(
 		// }
 	}
 
-	ret := new(JSONRPC2Multiplexer_proto_BufferInfo_Res)
+	ret := new(JSONRPC2DataStreamMultiplexer_proto_BufferInfo_Res)
 	ret.Size = resp_map_s_int64
 	if debug {
 		self.DebugPrintln("ret.Size:", ret.Size)
@@ -980,7 +981,7 @@ func (self *JSONRPC2Multiplexer) getBuffInfo(
 // #1 bool - closed
 // #2 invalid response (protocol) error - not nil in case if it's protocol error
 // #3 error
-func (self *JSONRPC2Multiplexer) getBuffSlice(
+func (self *JSONRPC2DataStreamMultiplexer) getBuffSlice(
 	target_buff io.WriteSeeker,
 	buffid string,
 	buff_start int64,
@@ -1027,12 +1028,12 @@ func (self *JSONRPC2Multiplexer) getBuffSlice(
 
 	control_size := buff_end - buff_start
 
-	var resp_msg *Message
+	var resp_msg *gojsonrpc2.Message
 	{
-		m := new(Message)
+		m := new(gojsonrpc2.Message)
 		m.Method = JSONRPC2_MULTIPLEXER_METHOD_GET_BUFFER_SLICE
-		p := &JSONRPC2Multiplexer_proto_BufferSlice_Req{
-			JSONRPC2Multiplexer_proto_NewBufferMsg: JSONRPC2Multiplexer_proto_NewBufferMsg{
+		p := &JSONRPC2DataStreamMultiplexer_proto_BufferSlice_Req{
+			JSONRPC2DataStreamMultiplexer_proto_NewBufferMsg: JSONRPC2DataStreamMultiplexer_proto_NewBufferMsg{
 				BufferId: buffid,
 			},
 			Start: buff_start,
@@ -1122,16 +1123,16 @@ func (self *JSONRPC2Multiplexer) getBuffSlice(
 	return false, false, nil, nil
 }
 
-func (self *JSONRPC2Multiplexer) jrpcPushMessageToOutsideCB(data []byte) error {
+func (self *JSONRPC2DataStreamMultiplexer) jrpcPushMessageToOutsideCB(data []byte) error {
 	return self.PushMessageToOutsideCB(data)
 }
 
 // use this function to send the data. this function will not return until
 // send succeed or fail
-func (self *JSONRPC2Multiplexer) ChannelData(data io.ReadSeeker) (
+func (self *JSONRPC2DataStreamMultiplexer) ChannelData(data io.ReadSeeker) (
 	timedout bool,
 	closed bool,
-	resp_msg *Message,
+	resp_msg *gojsonrpc2.Message,
 	proto_err error,
 	err error,
 ) {
@@ -1145,7 +1146,7 @@ func (self *JSONRPC2Multiplexer) ChannelData(data io.ReadSeeker) (
 	var buffer_id string
 	var request_id any
 
-	wrapper := new(JSONRPC2MultiplexerBufferWrapper)
+	wrapper := new(JSONRPC2DataStreamMultiplexerBufferWrapper)
 
 	func() {
 		lrc.LockMutex(self.buffer_wrappers_mutex2)
@@ -1194,10 +1195,10 @@ func (self *JSONRPC2Multiplexer) ChannelData(data io.ReadSeeker) (
 		}
 	}()
 
-	new_buffer_msg := new(JSONRPC2Multiplexer_proto_NewBufferMsg)
+	new_buffer_msg := new(JSONRPC2DataStreamMultiplexer_proto_NewBufferMsg)
 	new_buffer_msg.BufferId = buffer_id
 
-	channel_start_msg := new(Message)
+	channel_start_msg := new(gojsonrpc2.Message)
 	channel_start_msg.Method = JSONRPC2_MULTIPLEXER_METHOD_NEW_BUFFER_AVAILABLE
 	channel_start_msg.Params = new_buffer_msg
 
@@ -1209,7 +1210,7 @@ func (self *JSONRPC2Multiplexer) ChannelData(data io.ReadSeeker) (
 	new_id_chan = make(chan any)
 	continue_chan = make(chan struct{})
 
-	hook := new(JSONRPC2NodeNewRequestIdHook)
+	hook := new(gojsonrpc2.JSONRPC2NodeNewRequestIdHook)
 	hook.NewId = new_id_chan
 	hook.Continue = continue_chan
 
@@ -1255,7 +1256,7 @@ func (self *JSONRPC2Multiplexer) ChannelData(data io.ReadSeeker) (
 // this have protocol restriction on input data size
 // #0 - protocol error
 // #1 - all errors
-func (self *JSONRPC2Multiplexer) PushMessageFromOutside(data []byte) (error, error) {
+func (self *JSONRPC2DataStreamMultiplexer) PushMessageFromOutside(data []byte) (error, error) {
 	if len(data) >= 1050 {
 		return errors.New("data is too big. must be < 1050"),
 			errors.New("protocol error")
@@ -1264,11 +1265,11 @@ func (self *JSONRPC2Multiplexer) PushMessageFromOutside(data []byte) (error, err
 }
 
 // TODO: ?
-// func (self *JSONRPC2Multiplexer) PushMessage(data []byte) (error, error) {
+// func (self *JSONRPC2DataStreamMultiplexer) PushMessage(data []byte) (error, error) {
 // 	return nil, nil
 // }
 
-func (self *JSONRPC2Multiplexer) genUniqueBufferId(
+func (self *JSONRPC2DataStreamMultiplexer) genUniqueBufferId(
 	lrc *golockerreentrancycontext.LockerReentrancyContext,
 ) (string, error) {
 	if lrc == nil {

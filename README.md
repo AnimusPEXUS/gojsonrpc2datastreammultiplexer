@@ -1,3 +1,2 @@
-I needed my own JSON-RPC 2 implimentation for my own specific purposes
-
-so here it is
+this is data stream multiplexer. 
+it can be used for transitting multiple unrelated streams of data over one single data stream.
