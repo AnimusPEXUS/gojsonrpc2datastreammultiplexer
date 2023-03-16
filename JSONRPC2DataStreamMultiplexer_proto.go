@@ -1,4 +1,4 @@
-package gojsonrpc2
+package gojsonrpc2datastreammultiplexer
 
 // protocol part for JSONRPC2DataStreamMultiplexer. defines message structures
 

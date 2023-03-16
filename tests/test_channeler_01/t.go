@@ -7,6 +7,7 @@ import (
 
 	"github.com/AnimusPEXUS/goinmemfile"
 	"github.com/AnimusPEXUS/gojsonrpc2"
+	"github.com/AnimusPEXUS/gojsonrpc2datastreammultiplexer"
 )
 
 func main() {
@@ -15,10 +16,10 @@ func main() {
 
 	// j2 := gojsonrpc2.NewJSONRPC2Node()
 
-	c1 := gojsonrpc2.NewJSONRPC2Multiplexer()
+	c1 := gojsonrpc2datastreammultiplexer.NewJSONRPC2DataStreamMultiplexer()
 	c1.SetDebugName("JSONRPC2Multiplexer c1")
 
-	c2 := gojsonrpc2.NewJSONRPC2Multiplexer()
+	c2 := gojsonrpc2datastreammultiplexer.NewJSONRPC2DataStreamMultiplexer()
 	c2.SetDebugName("JSONRPC2Multiplexer c2")
 
 	// j1.PushMessageToOutsideCB = func(data []byte) error {

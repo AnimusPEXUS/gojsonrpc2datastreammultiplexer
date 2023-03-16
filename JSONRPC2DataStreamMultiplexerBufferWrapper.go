@@ -1,4 +1,4 @@
-package gojsonrpc2
+package gojsonrpc2datastreammultiplexer
 
 import (
 	"errors"

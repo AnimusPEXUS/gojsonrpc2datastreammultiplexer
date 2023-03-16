@@ -1,4 +1,4 @@
-package gojsonrpc2
+package gojsonrpc2datastreammultiplexer
 
 // JSONRPC2DataStreamMultiplexer is a protocol for quantisizing (and channelizing)
 // data being sent through single data stream.
