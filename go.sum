@@ -1,7 +1,7 @@
 github.com/AnimusPEXUS/goinmemfile v0.0.0-20230402102658-16fda24ef49a h1:TExXN9KW90G5g17auIqHUERQQ/XYDFY/hYrPZpfC8wM=
 github.com/AnimusPEXUS/goinmemfile v0.0.0-20230402102658-16fda24ef49a/go.mod h1:1dwjt85DZhL+k0b3meVRsoyfWAhbKCh5gfuZoxU0Gr8=
-github.com/AnimusPEXUS/gojsonrpc2 v0.0.0-20230316173854-a66f91cb9416 h1:qFVxK/JaVSZ7DAb9DOl2qLm+JIIFnb5DiQVaEqJaYEA=
-github.com/AnimusPEXUS/gojsonrpc2 v0.0.0-20230316173854-a66f91cb9416/go.mod h1:qz9lrAVfIQi8UjFt8JCfYqM5wi1cztR80a0nXK7E28g=
+github.com/AnimusPEXUS/gojsonrpc2 v0.0.0-20230402102828-3c4957046df3 h1:+gDCN3BQRqXCHcOu9el2O7ECCHEOgTzXTlE57ytJba4=
+github.com/AnimusPEXUS/gojsonrpc2 v0.0.0-20230402102828-3c4957046df3/go.mod h1:qz9lrAVfIQi8UjFt8JCfYqM5wi1cztR80a0nXK7E28g=
 github.com/AnimusPEXUS/golockerreentrancycontext v0.0.0-20230205202617-6e6a53c419ed h1:qGTO2fbCFtcb0asmUUq/jGw0joYb206u78ey0gkl/BQ=
 github.com/AnimusPEXUS/golockerreentrancycontext v0.0.0-20230205202617-6e6a53c419ed/go.mod h1:MVQsxAvekQWhuo4s0F+N2PxVeTOGqUwQgXATWa2IggI=
 github.com/AnimusPEXUS/utils v0.0.0-20210503222024-302052ad562e h1:e4giT6ZD7hDebpM+x3f7neHgOfq5tEyds5mQ4VgxjgE=
