@@ -1,5 +1,5 @@
-github.com/AnimusPEXUS/goinmemfile v0.0.0-20230402092653-f550bb5c9d79 h1:HTOAYmzQBTX8C5lXEktq94yjcMS4BupoJOnk3Nb1hKs=
-github.com/AnimusPEXUS/goinmemfile v0.0.0-20230402092653-f550bb5c9d79/go.mod h1:1dwjt85DZhL+k0b3meVRsoyfWAhbKCh5gfuZoxU0Gr8=
+github.com/AnimusPEXUS/goinmemfile v0.0.0-20230402102658-16fda24ef49a h1:TExXN9KW90G5g17auIqHUERQQ/XYDFY/hYrPZpfC8wM=
+github.com/AnimusPEXUS/goinmemfile v0.0.0-20230402102658-16fda24ef49a/go.mod h1:1dwjt85DZhL+k0b3meVRsoyfWAhbKCh5gfuZoxU0Gr8=
 github.com/AnimusPEXUS/gojsonrpc2 v0.0.0-20230316173854-a66f91cb9416 h1:qFVxK/JaVSZ7DAb9DOl2qLm+JIIFnb5DiQVaEqJaYEA=
 github.com/AnimusPEXUS/gojsonrpc2 v0.0.0-20230316173854-a66f91cb9416/go.mod h1:qz9lrAVfIQi8UjFt8JCfYqM5wi1cztR80a0nXK7E28g=
 github.com/AnimusPEXUS/golockerreentrancycontext v0.0.0-20230205202617-6e6a53c419ed h1:qGTO2fbCFtcb0asmUUq/jGw0joYb206u78ey0gkl/BQ=
