@@ -122,7 +122,7 @@ func (self *JSONRPC2DataStreamMultiplexer) requestSendingRespWaitingRoutine(
 	msg *gojsonrpc2.Message,
 	request_id_hook *gojsonrpc2.JSONRPC2NodeNewRequestIdHook,
 ) (
-	timeout bool,
+	timeout bool, // todo: rename this variable
 	closed bool,
 	resp *gojsonrpc2.Message,
 	proto_err error,
@@ -147,6 +147,8 @@ func (self *JSONRPC2DataStreamMultiplexer) requestSendingRespWaitingRoutine(
 
 	retry_countdown := 3
 retry_label:
+
+	// todo: use NewChannelledJSONRPC2NodeRespHandler()
 
 	var (
 		chan_timeout  = make(chan struct{})
