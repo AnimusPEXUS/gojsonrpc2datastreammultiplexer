@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/AnimusPEXUS/gouuidtools"
 
 	"github.com/AnimusPEXUS/goinmemfile"
 	"github.com/AnimusPEXUS/gojsonrpc2"
@@ -1288,9 +1288,12 @@ func (self *JSONRPC2DataStreamMultiplexer) genUniqueBufferId(
 		if debug {
 			self.DebugPrintln("generating new UUID")
 		}
-		u := uuid.NewV4()
+		u, err := gouuidtools.NewUUIDFromRandom()
+		if err != nil {
+			return "", err
+		}
 
-		ret = u.String()
+		ret = u.Format()
 
 		if debug {
 			self.DebugPrintln(ret)
