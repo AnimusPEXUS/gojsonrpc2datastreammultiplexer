@@ -23,11 +23,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/AnimusPEXUS/gouuidtools"
-
 	"github.com/AnimusPEXUS/goinmemfile"
 	"github.com/AnimusPEXUS/gojsonrpc2"
 	"github.com/AnimusPEXUS/golockerreentrancycontext"
+	"github.com/AnimusPEXUS/gouuidtools"
 )
 
 const (
@@ -1281,6 +1280,8 @@ func (self *JSONRPC2DataStreamMultiplexer) genUniqueBufferId(
 	if lrc == nil {
 		lrc = new(golockerreentrancycontext.LockerReentrancyContext)
 	}
+
+	// todo: use uuidregistry
 
 	var ret string
 
