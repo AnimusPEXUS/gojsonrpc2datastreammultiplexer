@@ -121,7 +121,7 @@ func (self *JSONRPC2DataStreamMultiplexer) requestSendingRespWaitingRoutine(
 	msg *gojsonrpc2.Message,
 	request_id_hook *gojsonrpc2.JSONRPC2NodeNewRequestIdHook,
 ) (
-	timeout bool, // todo: rename this variable
+	timedout bool,
 	closed bool,
 	resp *gojsonrpc2.Message,
 	proto_err error,
@@ -139,7 +139,7 @@ func (self *JSONRPC2DataStreamMultiplexer) requestSendingRespWaitingRoutine(
 		if debug {
 			self.DebugPrintln(
 				"requestSendingRespWaitingRoutine. defer results:",
-				timeout, closed, resp, proto_err, err,
+				timedout, closed, resp, proto_err, err,
 			)
 		}
 	}()
@@ -186,7 +186,7 @@ retry_label:
 		self.DebugPrintln(
 			"requestSendingRespWaitingRoutine.",
 			"after self.jrpc_node.SendRequest",
-			timeout, closed, resp, proto_err, err,
+			timedout, closed, resp, proto_err, err,
 		)
 	}
 
@@ -713,7 +713,7 @@ func (self *JSONRPC2DataStreamMultiplexer) handle_jrpcOnRequestCB(
 	msg *gojsonrpc2.Message,
 	lrc *golockerreentrancycontext.LockerReentrancyContext,
 ) (
-	timeout bool,
+	timedout bool,
 	closed bool,
 	proto_err error,
 	err error,
@@ -745,7 +745,7 @@ func (self *JSONRPC2DataStreamMultiplexer) handle_jrpcOnRequestCB(
 				var b []byte
 				b, err2 = json.Marshal(resp)
 				if err2 != nil {
-					timeout = false
+					timedout = false
 					closed = false
 					proto_err = nil
 					err = err2
@@ -755,7 +755,7 @@ func (self *JSONRPC2DataStreamMultiplexer) handle_jrpcOnRequestCB(
 			}
 			err2 = self.jrpc_node.SendMessage(resp)
 			if err2 != nil {
-				timeout = false
+				timedout = false
 				closed = false
 				proto_err = nil
 				err = err2
@@ -794,7 +794,7 @@ func (self *JSONRPC2DataStreamMultiplexer) handle_jrpcOnRequestCB(
 					" case JSONRPC2_MULTIPLEXER_METHOD_NEW_BUFFER_AVAILABLE",
 			)
 		}
-		timeout, closed, proto_err, err =
+		timedout, closed, proto_err, err =
 			self.jrpcOnRequestCB_NEW_BUFFER_AVAILABLE(msg)
 		if proto_err != nil {
 			resp.Error.Code = -32000
@@ -826,7 +826,7 @@ func (self *JSONRPC2DataStreamMultiplexer) handle_jrpcOnRequestCB(
 		}
 		// TODO: reset timeout for
 		// JSONRPC2_MULTIPLEXER_METHOD_NEW_BUFFER_AVAILABLE request
-		timeout, closed, proto_err, err =
+		timedout, closed, proto_err, err =
 			self.jrpcOnRequestCB_GET_BUFFER_INFO(msg, lrc)
 		if proto_err != nil {
 			resp.Error.Code = -32000
@@ -858,7 +858,7 @@ func (self *JSONRPC2DataStreamMultiplexer) handle_jrpcOnRequestCB(
 		}
 		// TODO: reset timeout for
 		// JSONRPC2_MULTIPLEXER_METHOD_NEW_BUFFER_AVAILABLE request
-		timeout, closed, proto_err, err =
+		timedout, closed, proto_err, err =
 			self.jrpcOnRequestCB_GET_BUFFER_SLICE(msg, lrc)
 		if proto_err != nil {
 			resp.Error.Code = -32000
