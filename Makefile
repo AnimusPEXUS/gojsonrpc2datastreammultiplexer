@@ -1,7 +1,8 @@
+export GONOPROXY="github.com/AnimusPEXUS/*"
 
 all: get
 
 get: 
-		make -C tests/test_channeler_01
+		$(MAKE) -C tests/test_channeler_01
 		go get -u -v "./..."
 		go mod tidy
