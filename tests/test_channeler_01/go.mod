@@ -3,9 +3,9 @@ module github.com/AnimusPEXUS/gojsonrpc2datastreammultiplexer/tests/test_channel
 go 1.19
 
 require (
-	github.com/AnimusPEXUS/goinmemfile v0.0.0-20230402102658-16fda24ef49a
-	github.com/AnimusPEXUS/gojsonrpc2 v0.0.0-20230604165602-032924975eaf
-	github.com/AnimusPEXUS/gojsonrpc2datastreammultiplexer v0.0.0-20230615004425-d2b9dae7f414
+	github.com/AnimusPEXUS/goinmemfile v0.0.0-20230615005913-b987d11ee924
+	github.com/AnimusPEXUS/gojsonrpc2 v0.0.0-20230615025640-7098bf5f40e0
+	github.com/AnimusPEXUS/gojsonrpc2datastreammultiplexer v0.0.0-20230615005747-7d829c22ea3b
 )
 
 require (
