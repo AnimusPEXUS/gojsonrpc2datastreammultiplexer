@@ -13,6 +13,7 @@ type JSONRPC2DataStreamMultiplexerBufferWrapper struct {
 	Buffer    io.ReadSeeker
 	Mutex     sync.Mutex
 	debugName string
+	debug     bool
 }
 
 func (self *JSONRPC2DataStreamMultiplexerBufferWrapper) SetDebugName(name string) {
@@ -41,12 +42,12 @@ func (self *JSONRPC2DataStreamMultiplexerBufferWrapper) BufferSlice(start int64,
 
 func (self *JSONRPC2DataStreamMultiplexerBufferWrapper) intBufferSlice(start int64, end int64) (ret_bytes []byte, ret_err error) {
 
-	if debug {
+	if self.debug {
 		self.DebugPrintln("BufferSlice", start, end)
 	}
 
 	defer func() {
-		if debug {
+		if self.debug {
 			self.DebugPrintln("BufferSlice defer", ret_bytes, ret_err)
 		}
 	}()
@@ -59,7 +60,7 @@ func (self *JSONRPC2DataStreamMultiplexerBufferWrapper) intBufferSlice(start int
 		return nil, errors.New("invalid 'end' value")
 	}
 
-	if debug {
+	if self.debug {
 		self.DebugPrintln("self.intBufferSize", start)
 	}
 	size, err := self.intBufferSize()
@@ -71,7 +72,7 @@ func (self *JSONRPC2DataStreamMultiplexerBufferWrapper) intBufferSlice(start int
 		return nil, errors.New("'end' exceeds buffer size")
 	}
 
-	if debug {
+	if self.debug {
 		self.DebugPrintln("self.Buffer.Seek", start)
 	}
 	_, err = self.Buffer.Seek(start, io.SeekStart)
@@ -81,7 +82,7 @@ func (self *JSONRPC2DataStreamMultiplexerBufferWrapper) intBufferSlice(start int
 
 	x := make([]byte, end-start)
 
-	if debug {
+	if self.debug {
 		self.DebugPrintln("io.ReadFull(self.Buffer, ", x, ")")
 	}
 	_, err = io.ReadFull(self.Buffer, x)
