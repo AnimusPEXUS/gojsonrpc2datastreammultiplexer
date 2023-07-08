@@ -1135,8 +1135,11 @@ func (self *JSONRPC2DataStreamMultiplexer) jrpcPushMessageToOutsideCB(data []byt
 	return self.PushMessageToOutsideCB(data)
 }
 
-// use this function to send the data. this function will not return until
-// send succeed or fail
+// use this function to send the data.
+//
+// NOTE: this function will not return until send succeed or fail. as a logical consecuance
+// to this, this function also returns the peer response via resp_msg
+// (NOTE: this response is Multiplexer protocol response, not a response on data youve sent via 'data')
 func (self *JSONRPC2DataStreamMultiplexer) ChannelData(data io.ReadSeeker) (
 	timedout bool,
 	closed bool,
