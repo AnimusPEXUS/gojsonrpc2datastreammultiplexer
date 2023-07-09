@@ -105,7 +105,7 @@ func (self *JSONRPC2DataStreamMultiplexer) Close() {
 	self.buffer_wrappers = nil
 }
 
-func (self *JSONRPC2DataStreamMultiplexer) DefaultOnRequestToProvideWriteSeekerCB(
+func DefaultOnRequestToProvideWriteSeekerCB(
 	size int64,
 	provide_data_destination func(io.WriteSeeker) error,
 ) error {
@@ -311,7 +311,7 @@ func (self *JSONRPC2DataStreamMultiplexer) jrpcOnRequestCB_NEW_BUFFER_AVAILABLE(
 
 	if self.OnRequestToProvideWriteSeekerCB == nil {
 		self.OnRequestToProvideWriteSeekerCB =
-			self.DefaultOnRequestToProvideWriteSeekerCB
+			DefaultOnRequestToProvideWriteSeekerCB
 	}
 
 	var write_seeker io.WriteSeeker
