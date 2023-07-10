@@ -45,12 +45,12 @@ type JSONRPC2DataStreamMultiplexer struct {
 		provide_data_destination func(io.WriteSeeker) error,
 	) error
 
-	// indicates what data transfer to writeseeker passed using
-	// OnRequestToProvideWriteSeekerCB is complete
-	// if OnRequestToProvideWriteSeekerCB is nil, DefaultOnRequestToProvideWriteSeekerCB()
-	// is used in it's place, which provides InMemFileFrom as io.WriteSeeker
-	// hint: you can do `x, ok := (v).(*InMemFileFrom) to convert io.WriteSeeker`
-	// hint: use OnRequestToProvideWriteSeekerCB to create WriteSeaker
+	// Indicates what data transfer to writeseeker (passed using
+	// OnRequestToProvideWriteSeekerCB) is complete.
+	// If OnRequestToProvideWriteSeekerCB is nil, DefaultOnRequestToProvideWriteSeekerCB()
+	// is used in it's place, which provides InMemFileFrom as io.WriteSeeker.
+	// hint: you can do `x, ok := (v).(*InMemFileFrom)`` to convert io.WriteSeeker.
+	// hint: use OnRequestToProvideWriteSeekerCB to create WriteSeaker:
 	// it's pointer will be a link between
 	// OnRequestToProvideWriteSeekerCB and OnIncommingDataTransferComplete
 	OnIncommingDataTransferComplete func(io.WriteSeeker)
