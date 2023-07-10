@@ -44,8 +44,15 @@ type JSONRPC2DataStreamMultiplexer struct {
 		size int64,
 		provide_data_destination func(io.WriteSeeker) error,
 	) error
+
 	// indicates what data transfer to writeseeker passed using
 	// OnRequestToProvideWriteSeekerCB is complete
+	// if OnRequestToProvideWriteSeekerCB is nil, DefaultOnRequestToProvideWriteSeekerCB()
+	// is used in it's place, which provides InMemFileFrom as io.WriteSeeker
+	// hint: you can do `x, ok := (v).(*InMemFileFrom) to convert io.WriteSeeker`
+	// hint: use OnRequestToProvideWriteSeekerCB to create WriteSeaker
+	// it's pointer will be a link between
+	// OnRequestToProvideWriteSeekerCB and OnIncommingDataTransferComplete
 	OnIncommingDataTransferComplete func(io.WriteSeeker)
 
 	buffer_wrappers        []*JSONRPC2DataStreamMultiplexerBufferWrapper
@@ -103,21 +110,6 @@ func (self *JSONRPC2DataStreamMultiplexer) Close() {
 	self.jrpc_node.Close()
 	self.jrpc_node = nil
 	self.buffer_wrappers = nil
-}
-
-func DefaultOnRequestToProvideWriteSeekerCB(
-	size int64,
-	provide_data_destination func(io.WriteSeeker) error,
-) error {
-	//b := bytes.NewBuffer(make([]byte, size))
-	imf := goinmemfile.NewInMemFileFromBytes(make([]byte, size), 0, false)
-	// bufio.NewWriterSize()
-	// bufio.NewReadWriter
-	err := provide_data_destination(imf)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (self *JSONRPC2DataStreamMultiplexer) requestSendingRespWaitingRoutine(
@@ -309,14 +301,20 @@ func (self *JSONRPC2DataStreamMultiplexer) jrpcOnRequestCB_NEW_BUFFER_AVAILABLE(
 
 	buf_size := buffer_info_resp.Size
 
+	var OnRequestToProvideWriteSeekerCB func(
+		size int64,
+		provide_data_destination func(io.WriteSeeker) error,
+	) error
+
 	if self.OnRequestToProvideWriteSeekerCB == nil {
-		self.OnRequestToProvideWriteSeekerCB =
-			DefaultOnRequestToProvideWriteSeekerCB
+		OnRequestToProvideWriteSeekerCB = DefaultOnRequestToProvideWriteSeekerCB
+	} else {
+		OnRequestToProvideWriteSeekerCB = self.OnRequestToProvideWriteSeekerCB
 	}
 
 	var write_seeker io.WriteSeeker
 
-	err = self.OnRequestToProvideWriteSeekerCB(
+	err = OnRequestToProvideWriteSeekerCB(
 		buf_size,
 		func(ws io.WriteSeeker) error {
 			ssize, err := ws.Seek(0, io.SeekEnd)
@@ -1332,6 +1330,21 @@ func (self *JSONRPC2DataStreamMultiplexer) genUniqueBufferId(
 	}
 
 	return ret, nil
+}
+
+func DefaultOnRequestToProvideWriteSeekerCB(
+	size int64,
+	provide_data_destination func(io.WriteSeeker) error,
+) error {
+	//b := bytes.NewBuffer(make([]byte, size))
+	imf := goinmemfile.NewInMemFileFromBytes(make([]byte, size), 0, false)
+	// bufio.NewWriterSize()
+	// bufio.NewReadWriter
+	err := provide_data_destination(imf)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func getBuffIdFrom_msg_par(
