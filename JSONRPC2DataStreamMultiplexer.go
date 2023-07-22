@@ -20,12 +20,11 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"sync"
 	"time"
 
 	"github.com/AnimusPEXUS/goinmemfile"
 	"github.com/AnimusPEXUS/gojsonrpc2"
-	"github.com/AnimusPEXUS/golockerreentrancycontext"
+	"github.com/AnimusPEXUS/goreentrantlock"
 	"github.com/AnimusPEXUS/gouuidtools"
 )
 
@@ -56,7 +55,7 @@ type JSONRPC2DataStreamMultiplexer struct {
 	OnIncommingDataTransferComplete func(io.WriteSeeker)
 
 	buffer_wrappers        []*JSONRPC2DataStreamMultiplexerBufferWrapper
-	buffer_wrappers_mutex2 *sync.Mutex
+	buffer_wrappers_mutex2 *goreentrantlock.ReentrantMutexCheckable
 
 	jrpc_node *gojsonrpc2.JSONRPC2Node
 
@@ -70,7 +69,7 @@ func NewJSONRPC2DataStreamMultiplexer() *JSONRPC2DataStreamMultiplexer {
 	self.debug = false
 	self.debugName = "JSONRPC2DataStreamMultiplexer"
 
-	self.buffer_wrappers_mutex2 = new(sync.Mutex)
+	self.buffer_wrappers_mutex2 = goreentrantlock.NewReentrantMutexCheckable(false)
 
 	self.jrpc_node = gojsonrpc2.NewJSONRPC2Node()
 	self.jrpc_node.OnRequestCB = func(m *gojsonrpc2.Message) (error, error) {
@@ -78,7 +77,7 @@ func NewJSONRPC2DataStreamMultiplexer() *JSONRPC2DataStreamMultiplexer {
 			self.DebugPrintln("got request from jsonrpc node")
 			self.DebugPrintln("passing to self.handle_jrpcOnRequestCB")
 		}
-		_, _, proto_err, err := self.handle_jrpcOnRequestCB(m, nil)
+		_, _, proto_err, err := self.handle_jrpcOnRequestCB(m)
 		if proto_err != nil || err != nil {
 			return proto_err, err
 		}
@@ -219,16 +218,10 @@ retry_label:
 }
 
 // no re-entrant locks in golang
-func (self *JSONRPC2DataStreamMultiplexer) getBuffByIdLocal(
-	id string,
-	lrc *golockerreentrancycontext.LockerReentrancyContext,
-) (
+func (self *JSONRPC2DataStreamMultiplexer) getBuffByIdLocal(id string) (
 	bw *JSONRPC2DataStreamMultiplexerBufferWrapper,
 	ok bool,
 ) {
-	if lrc == nil {
-		lrc = new(golockerreentrancycontext.LockerReentrancyContext)
-	}
 
 	if self.debug {
 		defer self.DebugPrintln("getBuffByIdLocal - exited")
@@ -238,8 +231,8 @@ func (self *JSONRPC2DataStreamMultiplexer) getBuffByIdLocal(
 		self.DebugPrintln("getBuffByIdLocal : before Lock()")
 	}
 
-	lrc.LockMutex(self.buffer_wrappers_mutex2)
-	defer lrc.UnlockMutex(self.buffer_wrappers_mutex2)
+	self.buffer_wrappers_mutex2.Lock()
+	defer self.buffer_wrappers_mutex2.Unlock()
 
 	if self.debug {
 		self.DebugPrintln("getBuffByIdLocal : after Lock()")
@@ -419,18 +412,13 @@ func (self *JSONRPC2DataStreamMultiplexer) jrpcOnRequestCB_NEW_BUFFER_AVAILABLE(
 	return false, false, nil, nil
 }
 
-func (self *JSONRPC2DataStreamMultiplexer) jrpcOnRequestCB_GET_BUFFER_INFO(
-	msg *gojsonrpc2.Message,
-	lrc *golockerreentrancycontext.LockerReentrancyContext,
-) (
+func (self *JSONRPC2DataStreamMultiplexer) jrpcOnRequestCB_GET_BUFFER_INFO(msg *gojsonrpc2.Message) (
 	timedout bool,
 	closed bool,
 	proto_err error,
 	err error,
 ) {
-	if lrc == nil {
-		lrc = new(golockerreentrancycontext.LockerReentrancyContext)
-	}
+
 	if self.debug {
 		self.DebugPrintln("jrpcOnRequestCB_GET_BUFFER_INFO")
 	}
@@ -457,7 +445,7 @@ func (self *JSONRPC2DataStreamMultiplexer) jrpcOnRequestCB_GET_BUFFER_INFO(
 		)
 	}
 
-	bw, ok := self.getBuffByIdLocal(buffid_str, lrc)
+	bw, ok := self.getBuffByIdLocal(buffid_str)
 	if !ok {
 		// fmt.Println("jrpcOnRequestCB: client tried to request unexisting buffer")
 		return false,
@@ -522,18 +510,12 @@ func (self *JSONRPC2DataStreamMultiplexer) jrpcOnRequestCB_GET_BUFFER_INFO(
 	return false, false, nil, nil
 }
 
-func (self *JSONRPC2DataStreamMultiplexer) jrpcOnRequestCB_GET_BUFFER_SLICE(
-	msg *gojsonrpc2.Message,
-	lrc *golockerreentrancycontext.LockerReentrancyContext,
-) (
+func (self *JSONRPC2DataStreamMultiplexer) jrpcOnRequestCB_GET_BUFFER_SLICE(msg *gojsonrpc2.Message) (
 	timedout bool,
 	closed bool,
 	proto_err error,
 	err error,
 ) {
-	if lrc == nil {
-		lrc = new(golockerreentrancycontext.LockerReentrancyContext)
-	}
 	if self.debug {
 		self.DebugPrintln("jrpcOnRequestCB_GET_BUFFER_SLICE")
 	}
@@ -616,13 +598,10 @@ func (self *JSONRPC2DataStreamMultiplexer) jrpcOnRequestCB_GET_BUFFER_SLICE(
 	var buff_slice []byte
 
 	timedout, closed, proto_err, err = func() (bool, bool, error, error) {
-		lrc.LockMutex(self.buffer_wrappers_mutex2)
-		defer lrc.UnlockMutex(self.buffer_wrappers_mutex2)
+		self.buffer_wrappers_mutex2.Lock()
+		defer self.buffer_wrappers_mutex2.Unlock()
 
-		buff, ok := self.getBuffByIdLocal(
-			buffid_str,
-			lrc,
-		)
+		buff, ok := self.getBuffByIdLocal(buffid_str)
 		if !ok {
 			return false,
 				false,
@@ -710,18 +689,12 @@ func (self *JSONRPC2DataStreamMultiplexer) jrpcOnRequestCB_GET_BUFFER_SLICE(
 	return false, false, nil, nil
 }
 
-func (self *JSONRPC2DataStreamMultiplexer) handle_jrpcOnRequestCB(
-	msg *gojsonrpc2.Message,
-	lrc *golockerreentrancycontext.LockerReentrancyContext,
-) (
+func (self *JSONRPC2DataStreamMultiplexer) handle_jrpcOnRequestCB(msg *gojsonrpc2.Message) (
 	timedout bool,
 	closed bool,
 	proto_err error,
 	err error,
 ) {
-	if lrc == nil {
-		lrc = new(golockerreentrancycontext.LockerReentrancyContext)
-	}
 
 	// if !msg.IsRequestAndNotNotification() {
 	// 	// TODO: report errors
@@ -828,7 +801,7 @@ func (self *JSONRPC2DataStreamMultiplexer) handle_jrpcOnRequestCB(
 		// TODO: reset timeout for
 		// JSONRPC2_MULTIPLEXER_METHOD_NEW_BUFFER_AVAILABLE request
 		timedout, closed, proto_err, err =
-			self.jrpcOnRequestCB_GET_BUFFER_INFO(msg, lrc)
+			self.jrpcOnRequestCB_GET_BUFFER_INFO(msg)
 		if proto_err != nil {
 			resp.Error.Code = -32000
 			resp.Error.Message = "protocol error"
@@ -860,7 +833,7 @@ func (self *JSONRPC2DataStreamMultiplexer) handle_jrpcOnRequestCB(
 		// TODO: reset timeout for
 		// JSONRPC2_MULTIPLEXER_METHOD_NEW_BUFFER_AVAILABLE request
 		timedout, closed, proto_err, err =
-			self.jrpcOnRequestCB_GET_BUFFER_SLICE(msg, lrc)
+			self.jrpcOnRequestCB_GET_BUFFER_SLICE(msg)
 		if proto_err != nil {
 			resp.Error.Code = -32000
 			resp.Error.Message = "protocol error"
@@ -1156,8 +1129,6 @@ func (self *JSONRPC2DataStreamMultiplexer) ChannelDataReader(data io.ReadSeeker)
 	err error,
 ) {
 
-	lrc := new(golockerreentrancycontext.LockerReentrancyContext)
-
 	if self.debug {
 		self.DebugPrintln("got data to channel:", data)
 	}
@@ -1168,14 +1139,14 @@ func (self *JSONRPC2DataStreamMultiplexer) ChannelDataReader(data io.ReadSeeker)
 	wrapper := new(JSONRPC2DataStreamMultiplexerBufferWrapper)
 
 	func() {
-		lrc.LockMutex(self.buffer_wrappers_mutex2)
-		defer lrc.UnlockMutex(self.buffer_wrappers_mutex2)
+		self.buffer_wrappers_mutex2.Lock()
+		defer self.buffer_wrappers_mutex2.Unlock()
 
 		if self.debug {
 			self.DebugPrintln("generating id for new buffer")
 		}
 
-		buffer_id, err = self.genUniqueBufferId(lrc)
+		buffer_id, err = self.genUniqueBufferId()
 		if err != nil {
 			return
 		}
@@ -1197,8 +1168,8 @@ func (self *JSONRPC2DataStreamMultiplexer) ChannelDataReader(data io.ReadSeeker)
 	}
 
 	defer func() {
-		lrc.LockMutex(self.buffer_wrappers_mutex2)
-		defer lrc.UnlockMutex(self.buffer_wrappers_mutex2)
+		self.buffer_wrappers_mutex2.Lock()
+		defer self.buffer_wrappers_mutex2.Unlock()
 
 		if self.debug {
 			self.DebugPrintln("cleaning up buffer", buffer_id, "wrapper")
@@ -1238,8 +1209,10 @@ func (self *JSONRPC2DataStreamMultiplexer) ChannelDataReader(data io.ReadSeeker)
 			self.DebugPrintln("waiting for new request id")
 		}
 		request_id = <-new_id_chan
-		lrc.LockMutex(self.buffer_wrappers_mutex2)
-		defer lrc.UnlockMutex(self.buffer_wrappers_mutex2)
+
+		self.buffer_wrappers_mutex2.Lock()
+		defer self.buffer_wrappers_mutex2.Unlock()
+
 		wrapper.RequestId = request_id
 		if self.debug {
 			self.DebugPrintln("new request id is:", request_id)
@@ -1288,12 +1261,7 @@ func (self *JSONRPC2DataStreamMultiplexer) PushMessageFromOutside(data []byte) (
 // 	return nil, nil
 // }
 
-func (self *JSONRPC2DataStreamMultiplexer) genUniqueBufferId(
-	lrc *golockerreentrancycontext.LockerReentrancyContext,
-) (string, error) {
-	if lrc == nil {
-		lrc = new(golockerreentrancycontext.LockerReentrancyContext)
-	}
+func (self *JSONRPC2DataStreamMultiplexer) genUniqueBufferId() (string, error) {
 
 	// todo: use uuidregistry
 
@@ -1317,7 +1285,7 @@ func (self *JSONRPC2DataStreamMultiplexer) genUniqueBufferId(
 		if self.debug {
 			self.DebugPrintln("testing")
 		}
-		_, ok := (self.getBuffByIdLocal(ret, lrc))
+		_, ok := (self.getBuffByIdLocal(ret))
 		if !ok {
 			if self.debug {
 				self.DebugPrintln("doesn't exists already - ok")

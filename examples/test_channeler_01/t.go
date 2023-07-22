@@ -87,7 +87,7 @@ func main() {
 		0,
 		false,
 	)
-	timedout, closed, _, proto_err, err := c1.ChannelData(imf0)
+	timedout, closed, _, proto_err, err := c1.ChannelDataReader(imf0)
 	if proto_err != nil || err != nil {
 		fmt.Println("proto_err:", proto_err)
 		fmt.Println("err      :", err)
