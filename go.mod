@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/AnimusPEXUS/goinmemfile v0.0.0-20230615005913-b987d11ee924
-	github.com/AnimusPEXUS/gojsonrpc2 v0.0.0-20230724022721-395b4d799a57
+	github.com/AnimusPEXUS/gojsonrpc2 v0.0.0-20230724024400-7a5c117274c8
 	github.com/AnimusPEXUS/goreentrantlock v0.0.0-20230722175424-235503e905b0
 	github.com/AnimusPEXUS/gouuidtools v0.0.0-20230722031440-125d4120438a
 )
