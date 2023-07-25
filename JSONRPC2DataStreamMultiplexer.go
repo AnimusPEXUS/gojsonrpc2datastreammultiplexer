@@ -90,6 +90,7 @@ func NewJSONRPC2DataStreamMultiplexer() *JSONRPC2DataStreamMultiplexer {
 
 func (self *JSONRPC2DataStreamMultiplexer) SetDebug(val bool) {
 	self.debug = val
+	self.jrpc_node.SetDebug(val)
 }
 
 func (self *JSONRPC2DataStreamMultiplexer) SetDebugName(name string) {
