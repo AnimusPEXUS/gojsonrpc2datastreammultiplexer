@@ -88,6 +88,10 @@ func NewJSONRPC2DataStreamMultiplexer() *JSONRPC2DataStreamMultiplexer {
 	return self
 }
 
+func (self *JSONRPC2DataStreamMultiplexer) SetDebug(val bool) {
+	self.debug = val
+}
+
 func (self *JSONRPC2DataStreamMultiplexer) SetDebugName(name string) {
 	self.debugName = fmt.Sprintf("[%s]", name)
 	self.jrpc_node.SetDebugName(fmt.Sprintf("%s [JSONRPC2Node]", self.debugName))
