@@ -4,8 +4,8 @@ go 1.19
 
 require (
 	github.com/AnimusPEXUS/goinmemfile v0.0.0-20230615005913-b987d11ee924
-	github.com/AnimusPEXUS/gojsonrpc2 v0.0.0-20230725234035-0dc87126a82e
-	github.com/AnimusPEXUS/gojsonrpc2datastreammultiplexer v0.0.0-20230725230413-ba4de93673bb
+	github.com/AnimusPEXUS/gojsonrpc2 v0.0.0-20230726003212-c6afb2ee6ea8
+	github.com/AnimusPEXUS/gojsonrpc2datastreammultiplexer v0.0.0-20230725234127-14153081fab4
 )
 
 require (

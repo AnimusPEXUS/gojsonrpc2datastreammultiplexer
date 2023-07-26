@@ -1108,6 +1108,9 @@ func (self *JSONRPC2DataStreamMultiplexer) getBuffSlice(
 }
 
 func (self *JSONRPC2DataStreamMultiplexer) jrpcPushMessageToOutsideCB(data []byte) error {
+	if self.PushMessageToOutsideCB == nil {
+		panic("self.PushMessageToOutsideCB == nil")
+	}
 	return self.PushMessageToOutsideCB(data)
 }
 
